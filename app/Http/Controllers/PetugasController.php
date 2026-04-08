@@ -8,21 +8,20 @@ use App\Models\User;
 use App\Models\Alat;
 use App\Models\Peminjaman;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PetugasController extends Controller
 {
     public function index() 
     {
-        $waitingApproval = Peminjaman::whereIn('status', ['pending', 'menunggu_kembali'])->count();
-
+        $waitingApproval = Peminjaman::where('status', 'pending')->count();
         $alatDipinjam = Peminjaman::where('status', 'dipinjam')->count();
-
-        $selesaiHariIni = Peminjaman::where('status', 'kembali')
-                                    ->whereDate('updated_at', Carbon::today())
+        $selesaiHariIni = Peminjaman::where('status', 'dikembalikan')
+                                    ->whereDate('updated_at', \Carbon\Carbon::today())
                                     ->count();
 
         $antreanTugas = Peminjaman::with(['user', 'alat'])
-                                    ->whereIn('status', ['pending', 'menunggu_kembali'])
+                                    ->where('status', 'pending')
                                     ->orderBy('created_at', 'desc')
                                     ->take(5)
                                     ->get();
@@ -54,7 +53,6 @@ class PetugasController extends Controller
         $alat = $peminjaman->alat;
 
         if ($request->status == 'disetujui') {
-            // PERBAIKAN: Gunakan kolom yang konsisten (stok_tersedia)
             if ($alat->stok_tersedia < $peminjaman->jumlah) {
                 return back()->with('error', 'Stok alat tidak mencukupi!');
             }
@@ -84,7 +82,7 @@ class PetugasController extends Controller
     public function menyetujuiPengembalian() 
     {
         $pengembalians = Peminjaman::with(['user', 'alat'])
-            ->where('status', 'dikembalikan') // Mencari yang diajukan peminjam
+            ->where('status', 'dikembalikan')
             ->latest()
             ->get();
 
@@ -93,21 +91,75 @@ class PetugasController extends Controller
 
     public function prosesKonfirmasiKembali(Request $request, $id)
     {
-        $pinjam = Peminjaman::findOrFail($id);
+        $pinjam = Peminjaman::with('alat')->findOrFail($id);
+        
+        // Ambil data dari request
+        $kondisi = $request->input('kondisi', 'baik');
+        $waktuSekarang = Carbon::now('Asia/Jakarta');
+        
+        // Inisialisasi Denda
+        $total_denda = 0;
 
+        // --- LOGIKA 1: DENDA KETERLAMBATAN ---
+        $deadline = Carbon::parse($pinjam->tgl_kembali)->startOfDay();
+        $hariIni = $waktuSekarang->copy()->startOfDay();
+
+        if ($hariIni->gt($deadline)) {
+            $selisihHari = $hariIni->diffInDays($deadline);
+            $total_denda += ($selisihHari * 5000); // Misal: Rp 5.000 per hari
+        }
+
+        // --- LOGIKA 2: DENDA KONDISI ---
+        if ($kondisi == 'rusak') {
+            $total_denda += 20000;
+        } elseif ($kondisi == 'lecet') {
+            $total_denda += 5000;
+        } elseif ($kondisi == 'hilang') {
+            // Jika hilang, denda seharga alat (asumsi ada kolom harga di table alat)
+            $hargaAlat = $pinjam->alat->harga ?? 100000; 
+            $total_denda += ($hargaAlat * $pinjam->jumlah);
+        }
+
+        // --- SIMPAN DATA ---
         $pinjam->update([
-            'status' => 'selesai', // SEKARANG BARU SELESAI
-            'kondisi' => $request->kondisi, // Petugas input kondisi alat (baik/rusak)
+            'status'           => 'selesai',
+            'kondisi'          => $kondisi,
+            'tgl_dikembalikan' => $waktuSekarang,
+            'total_denda'      => $total_denda,
+            'catatan'          => $request->catatan
         ]);
 
-        // Stok alat bertambah kembali
-        $pinjam->alat->increment('stok_tersedia', $pinjam->jumlah);
+        // Kembalikan Stok Alat
+        if ($kondisi != 'hilang') {
+            $pinjam->alat->increment('stok', $pinjam->jumlah);
+        }
 
-        return redirect()->back()->with('success', 'Verifikasi berhasil! Data otomatis masuk ke riwayat Admin.');
+        return redirect()->route('admin.pengembalian')->with('success', 'Pengembalian berhasil diproses!');
     }
 
     public function cetakLaporan() 
     {
-        return view ('petugas.laporan');
+        $laporans = \App\Models\Peminjaman::with(['user', 'alat'])->latest()->get();
+
+        return view('petugas.laporan', compact('laporans'));
+    }
+
+    public function exportPdf(Request $request)
+    {
+
+        $tgl_mulai = $request->tgl_mulai;
+        $tgl_selesai = $request->tgl_selesai;
+
+        $query = Peminjaman::with(['user', 'alat']);
+
+        if ($tgl_mulai && $tgl_selesai) {
+            $query->whereBetween('created_at', [$tgl_mulai, $tgl_selesai]);
+        }
+
+        $laporans = $query->latest()->get();
+
+        $pdf = Pdf::loadView('petugas.laporan_pdf', compact('laporans', 'tgl_mulai', 'tgl_selesai'));
+        
+        return $pdf->download('laporan-peminjaman.pdf');
     }
 }

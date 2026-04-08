@@ -71,15 +71,19 @@
         <div class="grid grid-cols-1 gap-6">
             @forelse($peminjamans as $pinjam)
                 @php
-                    // Pastikan tgl_kembali sudah di-cast sebagai datetime di Model
-                    $deadline = $pinjam->tgl_kembali;
-                    $hariIni = now(); 
+                    // 1. Paksa kedua tanggal ke awal hari (00:00:00) agar jam tidak merusak hitungan
+                    $deadline = \Carbon\Carbon::parse($pinjam->tgl_kembali)->startOfDay();
+                    $hariIni = now()->startOfDay(); 
+                    
+                    // 2. Cek apakah sudah lewat hari (Greater Than)
                     $isOverdue = $hariIni->gt($deadline);
                     $totalDenda = 0;
 
                     if($isOverdue) {
-                        $selisihHari = $hariIni->diffInDays($deadline);
-                        $totalDenda = $selisihHari * 5000; // Contoh denda 5rb/hari
+                        // 3. Gunakan diffInDays dan paksa ke integer (angka bulat)
+                        // Tanpa startOfDay(), selisih 1 jam bisa dianggap 1.1 hari yang bikin denda jadi 6.944
+                        $selisihHari = (int) $hariIni->diffInDays($deadline);
+                        $totalDenda = $selisihHari * 5000; 
                     }
                 @endphp
 

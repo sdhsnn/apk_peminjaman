@@ -35,19 +35,19 @@
                 <i class="fas fa-chart-pie w-5"></i> Dashboard
             </a>
             <a href="/admin/users" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-600 shadow-lg shadow-emerald-900/20 text-white transition-all">
-                <i class="fas fa-user-friends w-5"></i> Member Atlet
+                <i class="fas fa-user-friends w-5"></i> Kelola User
             </a>
             <a href="/admin/alat" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white">
-                <i class="fas fa-volleyball-ball w-5"></i> Katalog Alat
+                <i class="fas fa-volleyball-ball w-5"></i> Kelola Alat
             </a>
             
             <div class="pt-6">
                 <p class="text-[10px] font-bold text-emerald-500/50 uppercase tracking-[0.2em] mb-4">Transaksi</p>
                 <a href="/admin/peminjaman" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white mb-2">
-                    <i class="fas fa-calendar-plus w-5"></i> Sewa Alat
+                    <i class="fas fa-calendar-plus w-5"></i> Kelola Peminjaman
                 </a>
                 <a href="/admin/pengembalian" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white">
-                    <i class="fas fa-file-import w-5"></i> Pengembalian
+                    <i class="fas fa-file-import w-5"></i> Kelola Pengembalian
                 </a>
             </div>
         </nav>

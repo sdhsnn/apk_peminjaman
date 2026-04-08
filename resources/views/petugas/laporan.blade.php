@@ -85,21 +85,23 @@
         <div class="no-print bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm mb-10">
             <h2 class="text-sm font-black text-gray-900 uppercase tracking-widest italic mb-6">Konfigurasi Laporan</h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Dari Tanggal</label>
-                    <input type="date" class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-xs font-bold uppercase italic">
+            <form action="{{ route('petugas.laporan.pdf') }}" method="GET">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Dari Tanggal</label>
+                        <input type="date" name="tgl_mulai" class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-xs font-bold uppercase italic">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Sampai Tanggal</label>
+                        <input type="date" name="tgl_selesai" class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-xs font-bold uppercase italic">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full bg-[#062c21] hover:bg-emerald-800 text-white font-black py-3.5 rounded-2xl shadow-xl shadow-emerald-900/10 transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-widest">
+                            <i class="fas fa-file-pdf"></i> EXPORT PDF
+                        </button>
+                    </div>
                 </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Sampai Tanggal</label>
-                    <input type="date" class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-xs font-bold uppercase italic">
-                </div>
-                <div class="flex items-end">
-                    <button onclick="window.print()" class="w-full bg-[#062c21] hover:bg-emerald-800 text-white font-black py-3.5 rounded-2xl shadow-xl shadow-emerald-900/10 transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-widest">
-                        <i class="fas fa-print"></i> CETAK SEKARANG
-                    </button>
-                </div>
-            </div>
+            </form>
         </div>
 
         <div class="card-report bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm relative overflow-hidden">
@@ -120,30 +122,38 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
+                        @forelse($laporans as $index => $data)
                         <tr>
-                            <td class="py-5 px-2 text-xs font-bold text-gray-400 italic">01</td>
-                            <td class="py-5 text-xs font-bold text-gray-900 italic">02/04/2026</td>
-                            <td class="py-5">
-                                <p class="text-xs font-black text-gray-900 uppercase italic">Rian Hidayat</p>
-                                <p class="text-[9px] text-gray-400 font-bold uppercase">Atlit Basket</p>
+                            <td class="py-5 px-2 text-xs font-bold text-gray-400 italic">
+                                {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
                             </td>
-                            <td class="py-5 text-xs font-bold text-gray-600">Spalding TF-1000 (2x)</td>
+                            <td class="py-5 text-xs font-bold text-gray-900 italic">
+                                {{ $data->created_at->format('d/m/Y') }}
+                            </td>
+                            <td class="py-5">
+                                <p class="text-xs font-black text-gray-900 uppercase italic">{{ $data->user->name }}</p>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase">{{ $data->user->role ?? 'Peminjam' }}</p>
+                            </td>
+                            <td class="py-5 text-xs font-bold text-gray-600">
+                                {{ $data->alat->nama_alat }} ({{ $data->jumlah }}x)
+                            </td>
                             <td class="py-5 text-center">
-                                <span class="text-[9px] font-black border border-emerald-500 text-emerald-600 px-3 py-1 rounded-full uppercase italic tracking-tighter">Selesai</span>
+                                @if($data->status == 'kembali' || $data->status == 'selesai')
+                                    <span class="text-[9px] font-black border border-emerald-500 text-emerald-600 px-3 py-1 rounded-full uppercase italic tracking-tighter">Selesai</span>
+                                @elseif($data->status == 'pinjam')
+                                    <span class="text-[9px] font-black border border-orange-500 text-orange-600 px-3 py-1 rounded-full uppercase italic tracking-tighter">Dipinjam</span>
+                                @else
+                                    <span class="text-[9px] font-black border border-gray-400 text-gray-500 px-3 py-1 rounded-full uppercase italic tracking-tighter">{{ $data->status }}</span>
+                                @endif
                             </td>
                         </tr>
+                        @empty
                         <tr>
-                            <td class="py-5 px-2 text-xs font-bold text-gray-400 italic">02</td>
-                            <td class="py-5 text-xs font-bold text-gray-900 italic">02/04/2026</td>
-                            <td class="py-5">
-                                <p class="text-xs font-black text-gray-900 uppercase italic">Siti Aminah</p>
-                                <p class="text-[9px] text-gray-400 font-bold uppercase">Atlit Badminton</p>
-                            </td>
-                            <td class="py-5 text-xs font-bold text-gray-600">Raket Yonex Astrox</td>
-                            <td class="py-5 text-center">
-                                <span class="text-[9px] font-black border border-orange-500 text-orange-600 px-3 py-1 rounded-full uppercase italic tracking-tighter">Dipinjam</span>
+                            <td colspan="5" class="py-10 text-center text-gray-400 italic uppercase text-[10px] tracking-widest">
+                                Tidak ada data peminjaman ditemukan.
                             </td>
                         </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

@@ -33,6 +33,7 @@ class AlatController extends Controller
             'kategori' => 'required',
             'stok_total' => 'required|numeric',
             'harga_sewa' => 'required|numeric',
+            'harga_asli' => 'required|numeric', // Tambahkan ini
             'kondisi' => 'required',
             'foto' => 'nullable|image|max:2048'
         ]);
@@ -41,11 +42,12 @@ class AlatController extends Controller
 
         Alat::create([
             'nama_alat' => $request->nama_alat,
-            'slug' => Str::slug($request->nama_alat) . '-' . Str::random(5),
+            'slug' => \Illuminate\Support\Str::slug($request->nama_alat) . '-' . \Illuminate\Support\Str::random(5),
             'kategori' => $request->kategori,
             'stok_total' => $request->stok_total,
             'stok_tersedia' => $request->stok_total,
             'harga_sewa' => $request->harga_sewa,
+            'harga_asli' => $request->harga_asli, // Simpan harga asli
             'kondisi' => $request->kondisi,
             'deskripsi' => $request->deskripsi,
             'foto' => $path,
@@ -62,11 +64,12 @@ class AlatController extends Controller
             'nama_alat' => 'required',
             'stok_total' => 'required|numeric',
             'harga_sewa' => 'required|numeric',
+            'harga_asli' => 'required|numeric', // Tambahkan ini
             'kondisi' => 'required'
         ]);
 
         if ($request->hasFile('foto')) {
-            if ($alat->foto) Storage::disk('public')->delete($alat->foto);
+            if ($alat->foto) \Storage::disk('public')->delete($alat->foto);
             $alat->foto = $request->file('foto')->store('alats', 'public');
         }
 
@@ -74,8 +77,9 @@ class AlatController extends Controller
             'nama_alat' => $request->nama_alat,
             'kategori' => $request->kategori,
             'stok_total' => $request->stok_total,
-            'stok_tersedia' => $request->stok_total,
+            'stok_tersedia' => $request->stok_total, // Opsional: logika stok bisa disesuaikan
             'harga_sewa' => $request->harga_sewa,
+            'harga_asli' => $request->harga_asli, // Update harga asli
             'kondisi' => $request->kondisi,
             'deskripsi' => $request->deskripsi,
         ]);

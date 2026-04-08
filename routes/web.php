@@ -47,7 +47,7 @@ Route::middleware(['auth', 'role:petugas'])->group(function () {
     Route::get('/petugas/dashboard', [PetugasController::class, 'index'])->name('petugas.dashboard');
 
     //Menyetujui Peminjaman
-    Route::get('/petugas/menyetujui_peminjaman', [PetugasController::class, 'menyetujuiPeminjaman'])->name('petugas.menyetujui_pinjam');
+    Route::get('/petugas/menyetujui_peminjaman', [PetugasController::class, 'menyetujuiPeminjaman'])->name('petugas.menyetujui_peminjaman');
     Route::patch('/petugas/peminjaman/{id}/proses', [PetugasController::class, 'prosesPersetujuanPinjam'])->name('petugas.pinjam.proses');
 
     //Menyetujui Pengembalian
@@ -55,6 +55,7 @@ Route::middleware(['auth', 'role:petugas'])->group(function () {
     Route::patch('/petugas/pengembalian/{id}/konfirmasi', [PetugasController::class, 'prosesKonfirmasiKembali'])->name('petugas.kembali.proses');
     
     Route::get('/petugas/laporan', [PetugasController::class, 'cetakLaporan'])->name('petugas.laporan');
+    Route::get('/petugas/laporan/pdf', [PetugasController::class, 'exportPdf'])->name('petugas.laporan.pdf');
 });
 
 // PEMINJAM
@@ -68,3 +69,10 @@ Route::middleware(['auth', 'role:peminjam'])->group(function () {
     Route::get('/peminjam/pengembalian', [PeminjamController::class, 'kembali'])->name('peminjam.kembali');
     Route::put('/peminjam/kembali/{id}', [PeminjamController::class, 'prosesKembali'])->name('peminjam.proses_kembali');
 });
+
+Route::post('/logout', function () {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/');
+})->name('logout');

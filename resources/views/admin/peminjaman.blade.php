@@ -31,19 +31,19 @@
                 <i class="fas fa-chart-pie w-5"></i> Dashboard
             </a>
             <a href="/admin/users" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white">
-                <i class="fas fa-user-friends w-5"></i> Member Atlet
+                <i class="fas fa-user-friends w-5"></i> Kelola User
             </a>
             <a href="/admin/alat" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white">
-                <i class="fas fa-volleyball-ball w-5"></i> Katalog Alat
+                <i class="fas fa-volleyball-ball w-5"></i> Kelola Alat
             </a>
             
             <div class="pt-6">
                 <p class="text-[10px] font-bold text-emerald-500/50 uppercase tracking-[0.2em] mb-4">Transaksi</p>
                 <a href="/admin/peminjaman" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-600 shadow-lg shadow-emerald-900/20 text-white transition-all mb-2">
-                    <i class="fas fa-calendar-plus w-5"></i> Sewa Alat
+                    <i class="fas fa-calendar-plus w-5"></i> Kelola Peminjaman
                 </a>
                 <a href="/admin/pengembalian" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white">
-                    <i class="fas fa-file-import w-5"></i> Pengembalian
+                    <i class="fas fa-file-import w-5"></i> Kelola Pengembalian
                 </a>
             </div>
         </nav>
@@ -103,10 +103,10 @@
                                     <p class="font-bold text-gray-900 leading-none mb-1">{{ $item->user->name }}</p>
                                     @if($item->status == 'disetujui')
                                         <span class="text-[9px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">Aktif</span>
-                                    @elseif($item->status == 'menunggu')
+                                    @elseif($item->status == 'pending') {{-- Pastikan string sesuai dengan database --}}
                                         <span class="text-[9px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">Pending</span>
-                                    @elseif($item->status == 'selesai')
-                                        <span class="text-[9px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">Dikembalikan</span>
+                                    @elseif($item->status == 'selesai' || $item->status == 'dikembalikan')
+                                        <span class="text-[9px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">Selesai</span>
                                     @else
                                         <span class="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-md font-black uppercase tracking-wider">Ditolak</span>
                                     @endif

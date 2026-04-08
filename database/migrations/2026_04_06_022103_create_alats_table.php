@@ -19,9 +19,10 @@ return new class extends Migration
             $table->text('deskripsi')->nullable();
             $table->integer('stok_total');
             $table->integer('stok_tersedia');
-            $table->enum('kondisi', ['baik', 'lecet', 'rusak'])->default('baik');
+            $table->enum('kondisi', ['baik', 'lecet', 'rusak', 'hilang'])->default('baik');
             $table->string('foto')->nullable();
             $table->decimal('harga_sewa', 10, 2)->default(0);
+            $table->decimal('harga_asli', 15, 2)->default(0);
             $table->timestamps();
         });
     }

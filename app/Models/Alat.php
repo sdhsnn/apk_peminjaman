@@ -15,6 +15,7 @@ class Alat extends Model
         'stok_tersedia',
         'foto',
         'harga_sewa',
+        'harga_asli',
         'kondisi'
     ];
 }

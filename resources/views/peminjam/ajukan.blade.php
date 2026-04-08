@@ -74,10 +74,6 @@
                             <span class="text-slate-400">Kondisi</span>
                             <span class="{{ $alat->kondisi == 'baik' ? 'text-emerald-600' : 'text-amber-500' }} underline capitalize">{{ $alat->kondisi }}</span>
                         </div>
-                        <div class="flex justify-between text-[10px] font-bold uppercase italic">
-                            <span class="text-slate-400">Harga Sewa</span>
-                            <span class="text-emerald-600 font-black">Rp {{ number_format($alat->harga_sewa, 0, ',', '.') }}</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -115,7 +111,7 @@
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Jumlah Pinjam (Unit)</label>
                             <div class="relative">
                                 <i class="fas fa-layer-group absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
-                                <input type="number" name="jumlah" min="1" max="{{ $alat->stok_tersedia }}" placeholder="Contoh: 1" required
+                                <input type="number" name="jumlah" min="1" max="{{ $alat->stok_tersedia }}" placeholder="Maksimal: {{ $alat->stok_tersedia }}" required
                                        class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-semibold text-sm">
                             </div>
                         </div>
@@ -124,16 +120,17 @@
                             <div class="space-y-2">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Tgl Pinjam</label>
                                 <input type="date" 
+                                    id="tgl_pinjam"
                                     name="tgl_pinjam" 
                                     value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}" 
                                     readonly
-                                    class="w-full px-4 py-3.5 bg-slate-100 border border-slate-200 rounded-2xl outline-none font-semibold text-sm cursor-not-allowed opacity-70"
-                                    title="Tanggal pinjam otomatis hari ini">
+                                    class="w-full px-4 py-3.5 bg-slate-100 border border-slate-200 rounded-2xl outline-none font-semibold text-sm cursor-not-allowed opacity-70">
                             </div>
 
                             <div class="space-y-2">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Tgl Kembali</label>
                                 <input type="date" 
+                                    id="tgl_kembali"
                                     name="tgl_kembali" 
                                     min="{{ \Carbon\Carbon::now()->format('Y-m-d') }}" 
                                     required 
@@ -143,17 +140,18 @@
 
                         <div class="space-y-2">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Tujuan Peminjaman</label>
-                            <textarea name="tujuan" rows="3" placeholder="Contoh: Latihan rutin tim sepakbola..." required
+                            <textarea name="tujuan" rows="3" placeholder="Contoh: Latihan rutin untuk kompetisi..." required
                                       class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-semibold text-sm resize-none"></textarea>
                         </div>
 
                         <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex gap-3">
                             <i class="fas fa-exclamation-triangle text-amber-500 mt-1"></i>
                             <div>
-                                <p class="text-[10px] text-amber-800 font-bold uppercase italic">Ketentuan Keterlambatan:</p>
-                                <p class="text-[10px] text-amber-700 leading-relaxed font-semibold uppercase italic">
-                                    Denda sebesar <span class="font-black text-amber-900 underline">Rp 5.000 / hari</span> akan dikenakan jika melewati batas waktu.
-                                </p>
+                                <p class="text-[10px] text-amber-800 font-bold uppercase italic">Ketentuan Sistem:</p>
+                                <ul class="text-[10px] text-amber-700 leading-relaxed font-semibold uppercase italic list-disc ml-4">
+                                    <li>Maksimal durasi peminjaman adalah <span class="font-black text-amber-900">3 Hari</span>.</li>
+                                    <li>Denda sebesar <span class="font-black text-amber-900 underline">Rp 5.000 / hari</span> jika terlambat.</li>
+                                </ul>
                             </div>
                         </div>
 
@@ -167,6 +165,30 @@
             </div>
         </div>
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tglPinjamInput = document.getElementById('tgl_pinjam');
+            const tglKembaliInput = document.getElementById('tgl_kembali');
+
+            function updateConstraints() {
+                if (tglPinjamInput.value) {
+                    let startDate = new Date(tglPinjamInput.value);
+                    
+                    // Hitung batas maksimal (3 hari setelah tgl pinjam)
+                    let maxDate = new Date(startDate);
+                    maxDate.setDate(startDate.getDate() + 3);
+
+                    // Set atribut min dan max pada input tgl_kembali
+                    tglKembaliInput.min = tglPinjamInput.value;
+                    tglKembaliInput.max = maxDate.toISOString().split('T')[0];
+                }
+            }
+
+            // Jalankan saat load pertama kali
+            updateConstraints();
+        });
+    </script>
 
 </body>
 </html>

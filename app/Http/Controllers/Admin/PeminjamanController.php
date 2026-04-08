@@ -30,8 +30,17 @@ class PeminjamanController extends Controller
             'user_id' => 'required|exists:users,id',
             'alat_id' => 'required|exists:alats,id',
             'jumlah'  => 'required|integer|min:1',
-            'durasi'  => 'required|integer|min:1',
+            'tgl_kembali' => 'required|date|after_or_equal:today',
         ]);
+
+        $tglPinjam = now()->startOfDay(); 
+        $tglKembali = \Carbon\Carbon::parse($request->tgl_kembali)->startOfDay();
+        
+        $durasi = $tglPinjam->diffInDays($tglKembali);
+
+        if ($durasi > 3) {
+            return back()->with('error', "Batas maksimal peminjaman adalah 3 hari! (Input Anda: $durasi hari)");
+        }
 
         $alat = Alat::findOrFail($request->alat_id);
 
@@ -39,21 +48,16 @@ class PeminjamanController extends Controller
             return back()->with('error', 'Stok alat tidak mencukupi!');
         }
 
-        $tgl_pinjam = now();
-        $tgl_kembali = now()->addDays($request->durasi);
-
         Peminjaman::create([
             'user_id'     => $request->user_id,
             'alat_id'     => $request->alat_id,
             'jumlah'      => $request->jumlah,
-            'tgl_pinjam'  => $tgl_pinjam,
-            'tgl_kembali' => $tgl_kembali,
-            'status'      => 'disetujui',
+            'tgl_pinjam'  => now(),
+            'tgl_kembali' => $request->tgl_kembali,
+            'status'      => 'pending',
         ]);
-
-        $alat->decrement('stok_tersedia', $request->jumlah);
-
-        return redirect()->back()->with('success', 'Peminjaman berhasil diproses!');
+        
+        return redirect()->back()->with('success', 'Permintaan peminjaman terkirim. Menunggu persetujuan petugas.');
     }
 
     public function updatePeminjaman(Request $request, $id)
@@ -104,64 +108,73 @@ class PeminjamanController extends Controller
         return redirect()->back()->with('success', 'Status peminjaman diperbarui menjadi ' . $status);
     }
 
-    public function kembalikanPeminjaman($id)
+    public function kembalikanPeminjaman(Request $request, $id)
     {
-        $pinjam = Peminjaman::findOrFail($id);
+        // Gunakan findOrFail agar tidak error kalau ID tidak ada
+        $pinjam = Peminjaman::with('alat')->findOrFail($id);
+        $kondisi = $request->kondisi ?? 'baik'; 
+        $waktuSekarang = \Carbon\Carbon::now('Asia/Jakarta');
+        $total_denda = 0;
 
-        if ($pinjam->status == 'disetujui') {
-            // 1. Gunakan startOfDay() agar perhitungan murni berdasarkan tanggal (abaikan jam)
-            $tgl_kembali = \Carbon\Carbon::parse($pinjam->tgl_kembali)->startOfDay();
-            $tgl_sekarang = now()->startOfDay();
-            $total_denda = 0;
+        // --- PERBAIKAN LOGIKA DENDA TERLAMBAT ---
+        // Gunakan endOfDay agar user punya waktu sampai jam 23:59 untuk mengembalikan
+        $deadline = \Carbon\Carbon::parse($pinjam->tgl_kembali)->endOfDay();
 
-            // 2. Cek keterlambatan
-            if ($tgl_sekarang->gt($tgl_kembali)) {
-                // Gunakan diffInDays agar hasilnya integer (angka bulat)
-                $hari_terlambat = $tgl_sekarang->diffInDays($tgl_kembali);
-                $total_denda = $hari_terlambat * 5000; 
-            }
-
-            // 3. Update stok alat
-            if($pinjam->alat) {
-                $pinjam->alat->increment('stok_tersedia', $pinjam->jumlah);
-            }
-
-            // 4. Update data peminjaman
-            $pinjam->update([
-                'status' => 'selesai',
-                'tgl_dikembalikan' => now(), // Catat waktu asli pengembalian
-                'total_denda' => $total_denda 
-            ]);
-
-            return redirect()->back()->with('success', 'Alat berhasil dikembalikan! Denda: Rp ' . number_format($total_denda, 0, ',', '.'));
+        if ($waktuSekarang->gt($deadline)) {
+            // Hitung selisih hari dari tgl_kembali (awal hari) ke sekarang
+            $selisihHari = $waktuSekarang->diffInDays(\Carbon\Carbon::parse($pinjam->tgl_kembali)->startOfDay());
+            $total_denda = $selisihHari * 5000;
         }
 
-        return redirect()->back()->with('error', 'Status tidak valid untuk dikembalikan.');
+        // --- LOGIKA DENDA KONDISI ---
+        if ($kondisi == 'hilang') {
+            // Pastikan harga_asli ada di database
+            $hargaAlat = $pinjam->alat->harga_asli ?? $pinjam->alat->harga ?? 0;
+            $total_denda += ($hargaAlat * $pinjam->jumlah);
+        } elseif ($kondisi == 'rusak') {
+            $total_denda += 20000;
+        }
+
+        // --- UPDATE DATA ---
+        $pinjam->update([
+            'status' => 'selesai',
+            'kondisi' => $kondisi,
+            'total_denda' => $total_denda,
+            'tgl_dikembalikan' => $waktuSekarang,
+        ]);
+
+        // Update stok jika barang tidak hilang
+        if ($kondisi != 'hilang') {
+            // Gunakan relasi method () agar lebih stabil
+            $pinjam->alat()->increment('stok_tersedia', $pinjam->jumlah);
+        }
+
+        return redirect()->back()->with('success', 'Berhasil dikembalikan! Total Denda: Rp ' . number_format($total_denda, 0, ',', '.'));
     }
 
     /* ======================
-       CRUD PENGEMBALIAN
-       ====================== */
+    CRUD PENGEMBALIAN
+    ====================== */
     public function pengembalian(Request $request)
     {
-
         $query = Peminjaman::with(['user', 'alat'])
-                    ->whereIn('status', ['selesai', 'dikembalikan']);
+                ->where('status', 'selesai');
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->whereHas('alat', function($qAlat) use ($search) {
-                    $qAlat->where('nama_alat', 'like', '%' . $search . '%');
+                    $qAlat->where('nama_alat', 'like', "%{$search}%");
                 })
                 ->orWhereHas('user', function($qUser) use ($search) {
-                    $qUser->where('name', 'like', '%' . $search . '%');
+                    $qUser->where('name', 'like', "%{$search}%");
                 });
             });
         }
 
+        // Sortir berdasarkan tanggal dikembalikan terbaru
         $peminjamans = $query->latest('tgl_dikembalikan')->paginate(10);
-
+            
         return view('admin.pengembalian', compact('peminjamans'));
-    }
+        }
 }

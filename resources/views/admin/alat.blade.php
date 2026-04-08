@@ -33,19 +33,19 @@
                 <i class="fas fa-chart-pie w-5"></i> Dashboard
             </a>
             <a href="{{ route('admin.kelola_user') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white">
-                <i class="fas fa-user-friends w-5"></i> Member Atlet
+                <i class="fas fa-user-friends w-5"></i> Kelola User
             </a>
             <a href="{{ route('admin.alat') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-600 shadow-lg shadow-emerald-900/20 text-white transition-all">
-                <i class="fas fa-volleyball-ball w-5"></i> Katalog Alat
+                <i class="fas fa-volleyball-ball w-5"></i> Kelola Alat
             </a>
             
             <div class="pt-6">
                 <p class="text-[10px] font-bold text-emerald-500/50 uppercase tracking-[0.2em] mb-4">Transaksi</p>
                 <a href="{{ route('admin.peminjaman') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white mb-2">
-                    <i class="fas fa-calendar-plus w-5"></i> Sewa Alat
+                    <i class="fas fa-calendar-plus w-5"></i> Kelola Peminjaman
                 </a>
                 <a href="{{ route('admin.pengembalian') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all text-emerald-100/70 hover:text-white">
-                    <i class="fas fa-file-import w-5"></i> Pengembalian
+                    <i class="fas fa-file-import w-5"></i> Kelola Pengembalian
                 </a>
             </div>
         </nav>
@@ -69,11 +69,8 @@
 
             <div class="flex flex-wrap items-center gap-3">
                 <form action="{{ route('admin.alat') }}" method="GET" class="relative group">
-                    @if(request('kategori'))
-                        <input type="hidden" name="kategori" value="{{ request('kategori') }}">
-                    @endif
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari alat..." 
-                        class="w-64 pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-xs focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all card-shadow">
+                        class="w-64 pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-xs focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all card-shadow font-semibold">
                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors"></i>
                 </form>
 
@@ -102,10 +99,10 @@
                 <div class="relative h-48 w-full bg-gray-100 rounded-[2rem] overflow-hidden mb-4">
                     <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm z-10
                         {{ $alat->kondisi == 'baik' ? 'text-emerald-600' : ($alat->kondisi == 'lecet' ? 'text-amber-500' : 'text-rose-600') }}">
-                        Kondisi: {{ $alat->kondisi }}
+                        {{ $alat->kondisi }}
                     </span>
                     
-                    <div class="w-full h-full flex items-center justify-center">
+                    <div class="w-full h-full flex items-center justify-center overflow-hidden">
                         @if($alat->foto)
                             <img src="{{ asset('storage/' . $alat->foto) }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         @else
@@ -118,7 +115,10 @@
                 </div>
 
                 <div class="px-2 pb-2">
-                    <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">{{ $alat->kategori }}</p>
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">{{ $alat->kategori }}</p>
+                        <p class="text-[9px] font-black text-gray-300 uppercase">Harga Asli: Rp {{ number_format($alat->harga_asli, 0, ',', '.') }}</p>
+                    </div>
                     <h3 class="text-lg font-extrabold text-gray-900 leading-tight mb-1 truncate">{{ $alat->nama_alat }}</h3>
                     
                     <p class="text-emerald-600 font-black text-sm mb-2">
@@ -137,14 +137,14 @@
                             </p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="openEditAlat('{{ $alat->id }}', '{{ addslashes($alat->nama_alat) }}', '{{ $alat->kategori }}', '{{ $alat->stok_total }}', '{{ $alat->kondisi }}', '{{ addslashes($alat->deskripsi) }}', '{{ $alat->foto ? asset('storage/'.$alat->foto) : '' }}', '{{ (int)$alat->harga_sewa }}')" 
+                            <button onclick="openEditAlat('{{ $alat->id }}', '{{ addslashes($alat->nama_alat) }}', '{{ $alat->kategori }}', '{{ $alat->stok_total }}', '{{ $alat->kondisi }}', '{{ addslashes($alat->deskripsi) }}', '{{ $alat->foto ? asset('storage/'.$alat->foto) : '' }}', '{{ (int)$alat->harga_sewa }}', '{{ (int)$alat->harga_asli }}')" 
                                     class="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center justify-center">
-                                <i class="fas fa-edit"></i>
+                                <i class="fas fa-edit text-xs"></i>
                             </button>
-                            <form action="{{ route('admin.alat.destroy', $alat->id) }}" method="POST" onsubmit="return confirm('Hapus alat ini dari katalog?')">
+                            <form action="{{ route('admin.alat.destroy', $alat->id) }}" method="POST" onsubmit="return confirm('Hapus alat ini?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash text-xs"></i>
                                 </button>
                             </form>
                         </div>
@@ -186,17 +186,18 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Stok Unit</label>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Stok</label>
                     <input type="number" name="stok_total" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-semibold">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Harga Sewa /Hari</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">Rp</span>
-                        <input type="number" name="harga_sewa" required class="w-full pl-10 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-semibold">
-                    </div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Sewa/Hari</label>
+                    <input type="number" name="harga_sewa" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-semibold">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Harga Beli</label>
+                    <input type="number" name="harga_asli" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-semibold">
                 </div>
             </div>
 
@@ -206,7 +207,7 @@
             </div>
 
             <div>
-                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Foto Alat</label>
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Upload Foto</label>
                 <input type="file" name="foto" accept="image/*" class="w-full px-5 py-2 bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700">
             </div>
 
@@ -226,7 +227,7 @@
             @csrf @method('PUT')
             
             <div class="flex justify-center mb-2">
-                <img id="edit-preview" src="" class="h-20 w-20 object-cover rounded-2xl border-4 border-slate-50 shadow-sm hidden">
+                <img id="edit-preview" src="" class="h-24 w-24 object-cover rounded-2xl border-4 border-slate-50 shadow-sm hidden">
             </div>
 
             <div>
@@ -253,22 +254,23 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Stok</label>
                     <input type="number" id="edit-stok" name="stok_total" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-semibold">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Harga Sewa</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">Rp</span>
-                        <input type="number" id="edit-harga" name="harga_sewa" class="w-full pl-10 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-semibold">
-                    </div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Sewa</label>
+                    <input type="number" id="edit-harga" name="harga_sewa" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-semibold">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Beli</label>
+                    <input type="number" id="edit-harga-asli" name="harga_asli" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-semibold">
                 </div>
             </div>
 
             <div>
-                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Deskripsi Alat</label>
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Deskripsi</label>
                 <textarea id="edit-deskripsi" name="deskripsi" rows="2" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-medium resize-none"></textarea>
             </div>
 
@@ -288,19 +290,26 @@
 <script>
     function toggleModal(modalID) {
         const modal = document.getElementById(modalID);
-        modal.classList.toggle('hidden');
-        modal.classList.toggle('flex');
+        if (modal) {
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
     }
 
-    function openEditAlat(id, nama, kategori, stok, kondisi, deskripsi, fotoUrl, harga) {
+    function openEditAlat(id, nama, kategori, stok, kondisi, deskripsi, fotoUrl, hargaSewa, hargaAsli) {
+        // Set Action Form
         document.getElementById('form-edit').action = `/admin/alat/${id}`;
+        
+        // Isi Data ke Input
         document.getElementById('edit-nama').value = nama;
         document.getElementById('edit-kategori').value = kategori;
         document.getElementById('edit-stok').value = stok;
         document.getElementById('edit-kondisi').value = kondisi;
         document.getElementById('edit-deskripsi').value = deskripsi;
-        document.getElementById('edit-harga').value = harga;
+        document.getElementById('edit-harga').value = hargaSewa;
+        document.getElementById('edit-harga-asli').value = hargaAsli;
         
+        // Preview Foto
         const preview = document.getElementById('edit-preview');
         if(fotoUrl) {
             preview.src = fotoUrl;
@@ -308,6 +317,7 @@
         } else {
             preview.classList.add('hidden');
         }
+
         toggleModal('modal-edit');
     }
 

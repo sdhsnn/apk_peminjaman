@@ -69,7 +69,7 @@
         
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Dashboard Petugas</h1>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight italic">Dashboard Petugas</h1>
                 <p class="text-gray-500 font-medium italic">Pantau aktivitas peminjaman hari ini secara real-time.</p>
             </div>
             <div class="flex gap-3">
@@ -77,7 +77,7 @@
                     <div class="bg-emerald-100 text-emerald-600 p-2 rounded-lg text-xs">
                         <i class="fas fa-calendar-alt"></i>
                     </div>
-                    <span class="text-xs font-bold text-gray-600 uppercase tracking-widest">02 April 2026</span>
+                    <span class="text-xs font-bold text-gray-600 uppercase tracking-widest">{{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</span>
                 </div>
             </div>
         </div>
@@ -89,7 +89,7 @@
                 </div>
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Menunggu Approval</p>
-                    <h3 class="text-2xl font-black text-gray-900">14 <span class="text-xs font-medium text-gray-300">Data</span></h3>
+                    <h3 class="text-2xl font-black text-gray-900">{{ str_pad($waitingApproval, 2, '0', STR_PAD_LEFT) }} <span class="text-xs font-medium text-gray-300">Data</span></h3>
                 </div>
             </div>
 
@@ -99,7 +99,7 @@
                 </div>
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Alat Dipinjam</p>
-                    <h3 class="text-2xl font-black text-gray-900">32 <span class="text-xs font-medium text-gray-300">Unit</span></h3>
+                    <h3 class="text-2xl font-black text-gray-900">{{ str_pad($alatDipinjam, 2, '0', STR_PAD_LEFT) }} <span class="text-xs font-medium text-gray-300">Unit</span></h3>
                 </div>
             </div>
 
@@ -109,7 +109,7 @@
                 </div>
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Selesai Hari Ini</p>
-                    <h3 class="text-2xl font-black text-gray-900">08 <span class="text-xs font-medium text-gray-300">Item</span></h3>
+                    <h3 class="text-2xl font-black text-gray-900">{{ str_pad($selesaiHariIni, 2, '0', STR_PAD_LEFT) }} <span class="text-xs font-medium text-gray-300">Item</span></h3>
                 </div>
             </div>
         </div>
@@ -131,48 +131,63 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
-                        <tr class="group">
+                        @forelse($antreanTugas as $tugas)
+                        <tr class="group hover:bg-gray-50/50 transition-all">
                             <td class="py-5 px-2">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-slate-100 rounded-xl overflow-hidden font-bold flex items-center justify-center text-slate-400">RH</div>
-                                    <span class="font-bold text-sm text-gray-900 uppercase italic">Rian Hidayat</span>
+                                    <div class="w-10 h-10 bg-[#062c21] rounded-xl flex items-center justify-center text-emerald-400 font-bold shadow-sm flex-shrink-0">
+                                        {{ strtoupper(substr($tugas->user->name, 0, 2)) }}
+                                    </div>
+                                    <span class="font-bold text-sm text-gray-900 uppercase italic">{{ $tugas->user->name }}</span>
                                 </div>
                             </td>
                             <td class="py-5">
-                                <span class="text-sm font-semibold text-gray-600">Bola Basket Spalding</span>
+                                <span class="text-sm font-semibold text-gray-600 block">{{ $tugas->alat->nama_alat }}</span>
+                                <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded italic">
+                                    Qty: {{ $tugas->jumlah }}
+                                </span>
                             </td>
                             <td class="py-5">
-                                <span class="bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-lg uppercase italic">Peminjaman</span>
+                                @if($tugas->status == 'pending')
+                                    <span class="bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-lg uppercase italic border border-emerald-200">
+                                        <i class="fas fa-arrow-up mr-1"></i> Peminjaman
+                                    </span>
+                                @else
+                                    <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1 rounded-lg uppercase italic border border-blue-200">
+                                        <i class="fas fa-arrow-down mr-1"></i> Pengembalian
+                                    </span>
+                                @endif
                             </td>
                             <td class="py-5 text-center">
-                                <button class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black px-6 py-2 rounded-xl transition-all shadow-lg shadow-emerald-100 uppercase tracking-widest">Setujui</button>
+                                @if($tugas->status == 'pending')
+                                    <a href="/petugas/menyetujui_peminjaman" 
+                                    class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black px-6 py-2.5 rounded-xl transition-all shadow-md uppercase tracking-widest inline-block active:scale-95">
+                                        Setujui
+                                    </a>
+                                @else
+                                    <a href="/petugas/menyetujui_pengembalian" 
+                                    class="bg-gray-900 hover:bg-emerald-800 text-white text-[10px] font-black px-6 py-2.5 rounded-xl transition-all shadow-md uppercase tracking-widest inline-block active:scale-95">
+                                        Cek Alat
+                                    </a>
+                                @endif
                             </td>
                         </tr>
-
-                        <tr class="group">
-                            <td class="py-5 px-2">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-slate-100 rounded-xl overflow-hidden font-bold flex items-center justify-center text-slate-400">SA</div>
-                                    <span class="font-bold text-sm text-gray-900 uppercase italic">Siti Aminah</span>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="py-16 text-center">
+                                <div class="flex flex-col items-center justify-center text-gray-300">
+                                    <i class="fas fa-tasks text-4xl mb-4"></i>
+                                    <p class="text-xs font-black uppercase tracking-[0.2em] italic">Antrean Bersih / Kosong</p>
                                 </div>
                             </td>
-                            <td class="py-5">
-                                <span class="text-sm font-semibold text-gray-600">Raket Yonex Astrox</span>
-                            </td>
-                            <td class="py-5">
-                                <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1 rounded-lg uppercase italic">Pengembalian</span>
-                            </td>
-                            <td class="py-5 text-center">
-                                <button class="bg-gray-900 hover:bg-emerald-800 text-white text-[10px] font-black px-6 py-2 rounded-xl transition-all shadow-lg uppercase tracking-widest">Cek Alat</button>
-                            </td>
                         </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
     </main>
-
 </div>
 
 </body>

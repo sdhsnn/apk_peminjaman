@@ -18,6 +18,7 @@ class Peminjaman extends Model
         'tgl_dikembalikan', 
         'tujuan', 
         'status', 
+        'kondisi',
         'total_denda',
         'catatan'
     ];

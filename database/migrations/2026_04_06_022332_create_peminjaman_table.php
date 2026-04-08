@@ -18,10 +18,11 @@ return new class extends Migration
             $table->integer('jumlah');
             $table->date('tgl_pinjam');
             $table->date('tgl_kembali');
-            $table->date('tgl_dikembalikan')->nullable();
+            $table->dateTime('tgl_dikembalikan')->nullable();
             $table->text('tujuan');
             $table->enum('status', ['pending', 'disetujui', 'ditolak', 'selesai', 'dikembalikan'])->default('pending');
-            $table->decimal('total_denda', 10, 2)->default(0);
+            $table->enum('kondisi', ['baik', 'lecet', 'rusak', 'hilang'])->nullable();
+            $table->integer('total_denda')->default(0);
             $table->timestamps();
         });
     }
