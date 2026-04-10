@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\Alat;
 use App\Models\Peminjaman;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -23,19 +21,22 @@ class AdminController extends Controller
         $labels = [];
         $counts = [];
 
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i)->format('Y-m-d');
-            $labels[] = now()->subDays($i)->translatedFormat('l'); 
-            $counts[] = Peminjaman::whereDate('created_at', $date)->count();
+        // Ambil data 12 bulan terakhir
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $labels[] = $month->translatedFormat('F Y');
+            
+            $counts[] = Peminjaman::whereYear('created_at', $month->year)
+                                 ->whereMonth('created_at', $month->month)
+                                 ->count();
         }
 
+        // Teks ini yang akan tampil di atas grafik
+        $chartTitle = "Analisis aktivitas penyewaan alat bulanan";
+
         return view('admin.dashboard', compact(
-            'totalMember', 
-            'totalAlat', 
-            'sewaAktif', 
-            'dikembalikan', 
-            'labels', 
-            'counts'
+            'totalMember', 'totalAlat', 'sewaAktif', 'dikembalikan', 
+            'labels', 'counts', 'chartTitle'
         ));
     }
 }

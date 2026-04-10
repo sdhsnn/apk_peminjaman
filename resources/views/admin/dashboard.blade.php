@@ -6,6 +6,7 @@
 <div class="flex justify-between items-center mb-10">
     <div>
         <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Dashboard Admin</h1>
+        {{-- Teks ini tetap sesuai permintaan kamu --}}
         <p class="text-gray-500">Kelola peralatan olahraga dan aktivitas member hari ini.</p>
     </div>
     <div class="flex gap-4">
@@ -16,8 +17,8 @@
     </div>
 </div>
 
+{{-- Cards Stat --}}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    
     <div class="relative overflow-hidden bg-white p-6 rounded-2xl shadow-sm border border-gray-100 group">
         <div class="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
         <div class="flex justify-between items-center">
@@ -71,6 +72,7 @@
     </div>
 </div>
 
+{{-- Chart Section --}}
 <div class="mt-10">
     <div class="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
         <div class="flex items-center justify-between mb-8">
@@ -78,7 +80,8 @@
                 <h2 class="text-xl font-bold flex items-center gap-2">
                     <i class="fas fa-chart-line text-emerald-500"></i> Statistik Peminjaman
                 </h2>
-                <p class="text-gray-400 text-xs font-medium mt-1">Analisis aktivitas penyewaan alat 7 hari terakhir</p>
+                {{-- Teks ini sekarang dinamis dari $chartTitle --}}
+                <p class="text-gray-400 text-xs font-medium mt-1">{{ $chartTitle }}</p>
             </div>
         </div>
 
@@ -97,12 +100,13 @@
 <script>
     const ctx = document.getElementById('loanChart').getContext('2d');
     
+    // Ini gradient cantik yang tadi
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
     gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
 
     new Chart(ctx, {
-        type: 'line', 
+        type: 'line', // Kembali ke Line Chart favoritmu
         data: {
             labels: @json($labels), 
             datasets: [{
@@ -110,43 +114,24 @@
                 data: @json($counts), 
                 borderColor: '#10b981', 
                 backgroundColor: gradient,
-                borderWidth: 4,
+                borderWidth: 3,
                 fill: true,
                 tension: 0.4, 
                 pointBackgroundColor: '#10b981',
                 pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 8
+                pointRadius: 5
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#062c21',
-                    titleFont: { family: 'Plus Jakarta Sans', size: 14, weight: 'bold' },
-                    bodyFont: { family: 'Plus Jakarta Sans', size: 13 },
-                    padding: 12,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return ` ${context.parsed.y} Peminjaman`;
-                        }
-                    }
-                }
+                legend: { display: false }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { display: true, color: 'rgba(0, 0, 0, 0.03)', drawBorder: false },
-                    ticks: { stepSize: 1, font: { family: 'Plus Jakarta Sans', weight: '600' } }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Plus Jakarta Sans', weight: '600' } }
+                    ticks: { stepSize: 1 }
                 }
             }
         }
