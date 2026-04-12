@@ -26,7 +26,7 @@ class AlatSeeder extends Seeder
                 'stok_total' => 15,
                 'harga_sewa' => 20000,
                 'harga_asli' => 120000,
-                'kondisi' => 'Lecet',
+                'kondisi' => 'Baik',
                 'deskripsi' => 'Raket badminton Yonex asli',
             ],
         ];

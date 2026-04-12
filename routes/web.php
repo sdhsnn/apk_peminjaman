@@ -21,9 +21,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     // CRUD USER
     Route::get('/admin/users', [UserController::class, 'users'])->name('admin.kelola_user');
-    Route::post('/admin/users/store', [UserController::class, 'storeUser'])->name('admin.users.store');
-    Route::put('/admin/users/{id}', [UserController::class, 'updateUser'])->name('admin.users.update');
-    Route::delete('/admin/users/{id}', [UserController::class, 'destroyUser'])->name('admin.users.destroy');
+    Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
+    Route::put('/admin/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
+    Route::delete('/admin/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
     // CRUD ALAT
     Route::get('/admin/alat', [AlatController::class, 'alat'])->name('admin.alat');
@@ -59,15 +59,23 @@ Route::middleware(['auth', 'role:petugas'])->group(function () {
 });
 
 // PEMINJAM
-Route::middleware(['auth', 'role:peminjam'])->group(function () {
-    Route::get('/peminjam/dashboard', [PeminjamController::class, 'index'])->name('peminjam.dashboard');
-
-    //Peminjaman Alat
-    Route::get('/peminjam/ajukan/{id}', [PeminjamController::class, 'ajukanPeminjaman'])->name('peminjam.ajukan');
-    Route::post('/peminjam/pengajuan/store', [PeminjamController::class, 'storePeminjaman'])->name('peminjam.pengajuan.store');
-
-    Route::get('/peminjam/pengembalian', [PeminjamController::class, 'kembali'])->name('peminjam.kembali');
-    Route::put('/peminjam/kembali/{id}', [PeminjamController::class, 'prosesKembali'])->name('peminjam.proses_kembali');
+Route::prefix('peminjam')->middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [PeminjamController::class, 'index'])->name('peminjam.dashboard');
+    
+    // Katalog Alat
+    Route::get('/katalog', [PeminjamController::class, 'katalog'])->name('peminjam.katalog');
+    
+    // Peminjaman
+    Route::get('/ajukan/{id}', [PeminjamController::class, 'ajukanPeminjaman'])->name('peminjam.ajukan');
+    Route::post('/pinjam', [PeminjamController::class, 'storePeminjaman'])->name('peminjam.store');
+    
+    // Pengembalian
+    Route::get('/pengembalian', [PeminjamController::class, 'kembali'])->name('peminjam.kembali');
+    Route::post('/kembali/{id}', [PeminjamController::class, 'prosesKembali'])->name('peminjam.proses_kembali');
+    
+    // Riwayat
+    Route::get('/riwayat', [PeminjamController::class, 'riwayat'])->name('peminjam.riwayat');
 });
 
 Route::post('/logout', function () {

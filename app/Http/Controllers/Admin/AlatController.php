@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User;
 use App\Models\Alat;
-use App\Models\Peminjaman;
+use Illuminate\Support\Facades\Storage;
 
 class AlatController extends Controller
 {
@@ -23,6 +22,7 @@ class AlatController extends Controller
         }
 
         $alats = $query->latest()->get();
+
         return view('admin.alat', compact('alats'));
     }
 
@@ -33,7 +33,7 @@ class AlatController extends Controller
             'kategori' => 'required',
             'stok_total' => 'required|numeric',
             'harga_sewa' => 'required|numeric',
-            'harga_asli' => 'required|numeric', // Tambahkan ini
+            'harga_asli' => 'required|numeric',
             'kondisi' => 'required',
             'foto' => 'nullable|image|max:2048'
         ]);
@@ -47,7 +47,7 @@ class AlatController extends Controller
             'stok_total' => $request->stok_total,
             'stok_tersedia' => $request->stok_total,
             'harga_sewa' => $request->harga_sewa,
-            'harga_asli' => $request->harga_asli, // Simpan harga asli
+            'harga_asli' => $request->harga_asli,
             'kondisi' => $request->kondisi,
             'deskripsi' => $request->deskripsi,
             'foto' => $path,
@@ -64,12 +64,12 @@ class AlatController extends Controller
             'nama_alat' => 'required',
             'stok_total' => 'required|numeric',
             'harga_sewa' => 'required|numeric',
-            'harga_asli' => 'required|numeric', // Tambahkan ini
+            'harga_asli' => 'required|numeric',
             'kondisi' => 'required'
         ]);
 
         if ($request->hasFile('foto')) {
-            if ($alat->foto) \Storage::disk('public')->delete($alat->foto);
+            if ($alat->foto) Storage::disk('public')->delete($alat->foto);
             $alat->foto = $request->file('foto')->store('alats', 'public');
         }
 
@@ -77,9 +77,9 @@ class AlatController extends Controller
             'nama_alat' => $request->nama_alat,
             'kategori' => $request->kategori,
             'stok_total' => $request->stok_total,
-            'stok_tersedia' => $request->stok_total, // Opsional: logika stok bisa disesuaikan
+            'stok_tersedia' => $request->stok_total,
             'harga_sewa' => $request->harga_sewa,
-            'harga_asli' => $request->harga_asli, // Update harga asli
+            'harga_asli' => $request->harga_asli,
             'kondisi' => $request->kondisi,
             'deskripsi' => $request->deskripsi,
         ]);

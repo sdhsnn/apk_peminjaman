@@ -14,14 +14,20 @@ class PetugasController extends Controller
 {
     public function index() 
     {
+        // Menunggu approval (status pending)
         $waitingApproval = Peminjaman::where('status', 'pending')->count();
-        $alatDipinjam = Peminjaman::where('status', 'dipinjam')->count();
-        $selesaiHariIni = Peminjaman::where('status', 'dikembalikan')
-                                    ->whereDate('updated_at', \Carbon\Carbon::today())
+        
+        // Alat yang sedang dipinjam (status disetujui)
+        $alatDipinjam = Peminjaman::where('status', 'disetujui')->sum('jumlah');
+        
+        // Selesai hari ini (status selesai atau dikembalikan)
+        $selesaiHariIni = Peminjaman::where('status', 'selesai')
+                                    ->whereDate('tgl_dikembalikan', Carbon::today())
                                     ->count();
 
+        // Antrean tugas (pending dan dikembalikan)
         $antreanTugas = Peminjaman::with(['user', 'alat'])
-                                    ->where('status', 'pending')
+                                    ->whereIn('status', ['pending', 'dikembalikan'])
                                     ->orderBy('created_at', 'desc')
                                     ->take(5)
                                     ->get();
@@ -91,50 +97,80 @@ class PetugasController extends Controller
 
     public function prosesKonfirmasiKembali(Request $request, $id)
     {
-        $pinjam = Peminjaman::with('alat')->findOrFail($id);
-        
-        // Ambil data dari request
-        $kondisi = $request->input('kondisi', 'baik');
-        $waktuSekarang = Carbon::now('Asia/Jakarta');
-        
-        // Inisialisasi Denda
-        $total_denda = 0;
-
-        // --- LOGIKA 1: DENDA KETERLAMBATAN ---
-        $deadline = Carbon::parse($pinjam->tgl_kembali)->startOfDay();
-        $hariIni = $waktuSekarang->copy()->startOfDay();
-
-        if ($hariIni->gt($deadline)) {
-            $selisihHari = $hariIni->diffInDays($deadline);
-            $total_denda += ($selisihHari * 5000); // Misal: Rp 5.000 per hari
-        }
-
-        // --- LOGIKA 2: DENDA KONDISI ---
-        if ($kondisi == 'rusak') {
-            $total_denda += 20000;
-        } elseif ($kondisi == 'lecet') {
-            $total_denda += 5000;
-        } elseif ($kondisi == 'hilang') {
-            // Jika hilang, denda seharga alat (asumsi ada kolom harga di table alat)
-            $hargaAlat = $pinjam->alat->harga ?? 100000; 
-            $total_denda += ($hargaAlat * $pinjam->jumlah);
-        }
-
-        // --- SIMPAN DATA ---
-        $pinjam->update([
-            'status'           => 'selesai',
-            'kondisi'          => $kondisi,
-            'tgl_dikembalikan' => $waktuSekarang,
-            'total_denda'      => $total_denda,
-            'catatan'          => $request->catatan
+        $request->validate([
+            'kondisi' => 'required|in:baik,lecet,rusak,hilang',
+            'catatan' => 'nullable|string|max:500'
         ]);
 
-        // Kembalikan Stok Alat
-        if ($kondisi != 'hilang') {
-            $pinjam->alat->increment('stok', $pinjam->jumlah);
+        $pinjam = Peminjaman::with('alat')->findOrFail($id);
+        
+        if ($pinjam->status != 'dikembalikan') {
+            return redirect()->back()->with('error', 'Status peminjaman tidak valid untuk dikonfirmasi!');
         }
-
-        return redirect()->route('admin.pengembalian')->with('success', 'Pengembalian berhasil diproses!');
+        
+        $kondisiBaru = $request->kondisi;
+        $waktuSekarang = Carbon::now('Asia/Jakarta');
+        $total_denda = 0;
+        
+        // HITUNG DENDA KETERLAMBATAN
+        $deadline = Carbon::parse($pinjam->tgl_kembali)->endOfDay();
+        
+        if ($waktuSekarang->gt($deadline)) {
+            $selisihHari = $waktuSekarang->diffInDays(Carbon::parse($pinjam->tgl_kembali)->startOfDay());
+            $total_denda += ($selisihHari * 5000);
+        }
+        
+        // HITUNG DENDA KONDISI
+        switch ($kondisiBaru) {
+            case 'hilang':
+                $hargaAlat = $pinjam->alat->harga_asli ?? $pinjam->alat->harga_sewa ?? 0;
+                $total_denda += ($hargaAlat * $pinjam->jumlah);
+                break;
+            case 'rusak':
+                $total_denda += 50000;
+                break;
+            case 'lecet':
+                $total_denda += 15000;
+                break;
+            case 'baik':
+                $total_denda += 0;
+                break;
+        }
+        
+        $total_denda = max(0, $total_denda);
+        
+        // ========== LOGIKA STOK ==========
+        $alat = $pinjam->alat;
+        
+        if ($kondisiBaru == 'hilang' || $kondisiBaru == 'rusak') {
+            // HILANG atau RUSAK: stok tetap berkurang (tidak dikembalikan)
+            $alat->decrement('stok_tersedia', $pinjam->jumlah);
+            $alat->decrement('stok_total', $pinjam->jumlah);
+            
+        } elseif ($kondisiBaru == 'lecet') {
+            // LECET: stok dikembalikan (masih bisa dipinjam)
+            $alat->increment('stok_tersedia', $pinjam->jumlah);
+            // Stok total tetap (tidak berkurang)
+            
+        } elseif ($kondisiBaru == 'baik') {
+            // BAIK: stok dikembalikan normal
+            $alat->increment('stok_tersedia', $pinjam->jumlah);
+            // Stok total tetap
+        }
+        
+        // UPDATE DATA PEMINJAMAN
+        $pinjam->update([
+            'status'           => 'selesai',
+            'kondisi'          => $kondisiBaru,
+            'total_denda'      => $total_denda,
+            'tgl_dikembalikan' => $waktuSekarang,
+            'tujuan'           => $request->catatan ?? $pinjam->tujuan,
+        ]);
+        
+        $message = "Pengembalian berhasil diproses! Kondisi: " . ucfirst($kondisiBaru) . 
+                " | Total Denda: Rp " . number_format($total_denda, 0, ',', '.');
+        
+        return redirect()->route('petugas.menyetujui_kembali')->with('success', $message);
     }
 
     public function cetakLaporan() 
@@ -146,20 +182,21 @@ class PetugasController extends Controller
 
     public function exportPdf(Request $request)
     {
-
         $tgl_mulai = $request->tgl_mulai;
         $tgl_selesai = $request->tgl_selesai;
 
         $query = Peminjaman::with(['user', 'alat']);
 
         if ($tgl_mulai && $tgl_selesai) {
-            $query->whereBetween('created_at', [$tgl_mulai, $tgl_selesai]);
+            // PERBAIKAN: Gunakan whereDate agar menangkap seluruh tanggal
+            $query->whereDate('created_at', '>=', $tgl_mulai)
+                ->whereDate('created_at', '<=', $tgl_selesai);
         }
 
         $laporans = $query->latest()->get();
 
         $pdf = Pdf::loadView('petugas.laporan_pdf', compact('laporans', 'tgl_mulai', 'tgl_selesai'));
         
-        return $pdf->download('laporan-peminjaman.pdf');
+        return $pdf->download('laporan-peminjaman-' . date('Y-m-d') . '.pdf');
     }
 }
